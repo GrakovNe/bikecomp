@@ -9,6 +9,7 @@
 #include <avr/io.h>
 #include "lcd_lib.h"
 #include "ds1307_lib.h"
+#include "ds18b20_lib.h"
 #include <stdlib.h>
 
 #define UP_LEFT_CORNER     0x00
@@ -29,13 +30,6 @@
 #define RPM_SENSOR_DDR         DDRB
 #define RPM_SENSOR_DIRECT_PIN  2
 #define RPM_SENSOR_INVERSE_PIN 3
-
-#define TEMPERATURE_SENSOR_PORT PORTB
-#define TEMPERATURE_SENSOR_PIN  PINB
-#define TEMPERATURE_SENSOR_DDR  DDRB
-#define TEMPERATURE_SENSOR_BIT  0
-
-
 
 int wheel_rpm = 103;
 int temperature = 16;
@@ -150,17 +144,20 @@ inline _init_(){
 	RPM_SENSOR_DDR  &= ~((1 << RPM_SENSOR_DIRECT_PIN) | (1 << RPM_SENSOR_INVERSE_PIN));
 	RPM_SENSOR_PORT |= (1 << RPM_SENSOR_DIRECT_PIN | 1 << RPM_SENSOR_INVERSE_PIN);
 	
-	TEMPERATURE_SENSOR_PORT |= (1 << TEMPERATURE_SENSOR_BIT);
-	TEMPERATURE_SENSOR_DDR |= (1 << TEMPERATURE_SENSOR_BIT);
+	
 	
 	/*initialize DS1307*/
 	ds_1307_init();
 	ds_1307_read_time(&curent_time.hours, &curent_time.minutes, 0);
 }
 
+
 int main(void)
 {
 	_init_();
+	
+	one_wire_init();
+	temperature = ds_18b20_measure_temp();
 	
 	update_stats_display();
 	
