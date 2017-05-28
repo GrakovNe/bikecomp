@@ -7,6 +7,7 @@
 
 #define F_CPU 8000000UL
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include "lcd_lib.h"
 #include "ds1307_lib.h"
 #include "ds18b20_lib.h"
@@ -31,7 +32,7 @@
 #define RPM_SENSOR_DIRECT_PIN  2
 #define RPM_SENSOR_INVERSE_PIN 3
 
-int wheel_rpm = 103;
+int wheel_rpm = 0;
 int temperature = 16;
 int averange_speed = 35;
 int total_distance = 54;
@@ -128,7 +129,12 @@ inline void lcd_load_cusom_symbols(){
 	for (int i = 0; i < 6; i++){
 		display_ad_custom_symbol(specialSymbols[i], i);
 	}
+}
 
+ISR(ANA_COMP_vect){
+	wheel_rpm ++;
+	temperature = ds_18b20_measure_temp();
+	update_stats_display();
 }
 
 inline _init_(){
@@ -149,6 +155,21 @@ inline _init_(){
 	/*initialize DS1307*/
 	ds_1307_init();
 	ds_1307_read_time(&curent_time.hours, &curent_time.minutes, 0);
+	
+	/*initialize DS18B20*/
+	one_wire_init();
+	temperature = ds_18b20_measure_temp();
+	
+	
+	/*initialize analog comparator*/
+	ACSR=0x0B;
+	SFIOR=0x00;
+	
+	
+	sei();
+	
+		
+	//_delay_ms(1000);
 }
 
 
@@ -156,7 +177,6 @@ int main(void)
 {
 	_init_();
 	
-	one_wire_init();
 	temperature = ds_18b20_measure_temp();
 	
 	update_stats_display();
